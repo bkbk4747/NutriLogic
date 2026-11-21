@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>NutriLogic · 나만의 스마트 식단 코치</title>
+  <meta name="description" content="식단을 기록하고 내 목표 대비 칼로리·탄단지를 분석하는 웹 앱 (NutriLogic 2주차 웹 버전)">
+  <!-- 한글 글꼴(Pretendard). 인터넷이 없으면 아래 style.css의 기본 글꼴로 대신 보인다. -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- ===== 상단 바: 로고 + 탭 + 프로필 요약 ===== -->
+  <header class="topbar">
+    <a class="brand" href="#today" aria-label="NutriLogic 홈">
+      <span class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><path d="M7 3v8M5 3v5a2 2 0 0 0 4 0V3M7 11v10M16 3c-1.7 1.2-2.5 3.3-2.5 6v3h2.5v9" /></svg>
+      </span>
+      NutriLogic
+    </a>
+    <nav class="tabs" aria-label="메뉴">
+      <a href="#today" data-tab="today"><svg viewBox="0 0 24 24"><path d="M4 11.5 12 5l8 6.5V20H4z" /></svg>오늘</a>
+      <a href="#log" data-tab="log"><svg viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17" rx="2" /><path d="M9 4V3h6v1M9 10h6M9 14h6" /></svg>식단 기록</a>
+      <a href="#fav" data-tab="fav"><svg viewBox="0 0 24 24"><path d="m12 3.5 2.6 5.4 5.9.8-4.3 4.1 1 5.8L12 16.8l-5.2 2.8 1-5.8-4.3-4.1 5.9-.8z" /></svg>즐겨찾기</a>
+      <a href="#history" data-tab="history"><svg viewBox="0 0 24 24"><path d="M5 20v-5M10 20v-9M15 20v-7M20 20V5" /></svg>지난 기록</a>
+      <a href="#profile" data-tab="profile"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4" /><path d="M4.5 20c1.4-3.5 4.2-5 7.5-5s6.1 1.5 7.5 5" /></svg>내 프로필</a>
+    </nav>
+    <a class="profile-chip" href="#profile" id="profileChip">
+      <span class="avatar" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4" /><path d="M4.5 20c1.4-3.5 4.2-5 7.5-5s6.1 1.5 7.5 5" /></svg>
+      </span>
+      <span id="profileChipText">프로필 없음</span>
+    </a>
+  </header>
+
+  <main>
+    <!-- ================= 오늘 ================= -->
+    <section class="view" id="view-today" data-view="today">
+      <div class="today-grid">
+        <div class="col">
+          <article class="card summary">
+            <div class="date-row">
+              <svg class="ico accent" viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="16" rx="2" /><path d="M4 10h16M8 3v4M16 3v4" /></svg>
+              <h2 id="dateLabel">-</h2>
+              <button class="icon-btn" data-action="prev-day" aria-label="이전 날">‹</button>
+              <button class="icon-btn" data-action="next-day" aria-label="다음 날" id="nextDayBtn">›</button>
+              <button class="pill" data-action="go-today" id="todayPill">오늘</button>
+            </div>
+            <div class="ring-row">
+              <div class="ring" id="ring"></div>
+              <div class="remain">
+                <p id="remainTitle">남은 칼로리</p>
+                <strong id="remainKcal">-</strong>
+              </div>
+            </div>
+            <div class="macros" id="macroBars"></div>
+          </article>
+
+          <article class="card week-card">
+            <div class="card-head">
+              <h3><svg class="ico accent" viewBox="0 0 24 24"><path d="M5 20v-5M10 20v-9M15 20v-7M20 20V5" /></svg>최근 7일 칼로리 섭취량</h3>
+              <span class="pill soft" id="targetPill">목표 -</span>
+            </div>
+            <div class="chart" id="weekChart"></div>
+          </article>
+
+          <article class="card recommend" id="recommendCard"></article>
+        </div>
+
+        <div class="col">
+          <article class="card search-card">
+            <form class="search-row" id="quickSearchForm" autocomplete="off">
+              <label class="search-box">
+                <svg class="ico" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5" /><path d="m16 16 4.5 4.5" /></svg>
+                <input id="quickSearch" type="search" placeholder="음식 이름을 검색하세요." aria-label="음식 검색">
+              </label>
+              <button class="btn primary big" type="submit">＋ 식단 기록</button>
+              <div class="dropdown" id="quickResults" hidden></div>
+            </form>
+            <div class="divider"></div>
+            <div class="card-head">
+              <h3><svg class="ico accent" viewBox="0 0 24 24"><path d="m12 3.5 2.6 5.4 5.9.8-4.3 4.1 1 5.8L12 16.8l-5.2 2.8 1-5.8-4.3-4.1 5.9-.8z" /></svg>즐겨찾기로 빠르게 추가하기</h3>
+              <a class="link" href="#fav">전체 보기 ›</a>
+            </div>
+            <div class="fav-strip" id="favStrip"></div>
+          </article>
+
+          <article class="card list-card">
+            <div class="card-head">
+              <h3 class="big-title"><svg class="ico accent big" viewBox="0 0 24 24"><path d="M7 3v8M5 3v5a2 2 0 0 0 4 0V3M7 11v10M16 3c-1.7 1.2-2.5 3.3-2.5 6v3h2.5v9" /></svg><span id="listTitle">오늘의 식단 기록</span></h3>
+              <span class="pill soft" id="listSummary">총 0개 · 0 kcal</span>
+            </div>
+            <div id="todayList"></div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= 식단 기록 ================= -->
+    <section class="view" id="view-log" data-view="log" hidden>
+      <div class="page-head">
+        <h2>식단 기록</h2>
+        <p class="muted"><b id="logDateNote">-</b> 기록으로 저장됩니다. 음식을 검색해서 고르거나, 목록에 없으면 직접 입력하세요.</p>
+      </div>
+      <div class="segmented" role="tablist" id="logModeTabs">
+        <button data-mode="search" class="on">음식 검색</button>
+        <button data-mode="manual">직접 입력</button>
+        <button data-mode="addfood">음식 데이터 추가</button>
+      </div>
+
+      <article class="card" data-mode-panel="search">
+        <label class="search-box wide">
+          <svg class="ico" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5" /><path d="m16 16 4.5 4.5" /></svg>
+          <input id="foodSearch" type="search" placeholder="예: 닭가슴살, 김치 (비워 두면 전체 목록)" autocomplete="off" aria-label="음식 검색">
+        </label>
+        <p class="muted small" id="searchCount"></p>
+        <div class="food-list" id="foodResults"></div>
+      </article>
+
+      <article class="card form-card" data-mode-panel="manual" hidden>
+        <h3>식단 직접 입력하여 기록</h3>
+        <p class="muted small">목록에 없는 음식(서브웨이, 맘스터치 등)이나, 목록에 있어도 포장지 영양성분표 수치가 다를 때 쓰세요. <b>먹은 양 기준</b> 값을 그대로 넣으면 됩니다.</p>
+        <form id="manualForm" novalidate>
+          <div class="field-grid">
+            <label class="field span2">음식 이름<input name="name" maxlength="40" placeholder="예: 서브웨이 로스트치킨 15cm" required></label>
+            <label class="field">먹은 양 (g)<input name="grams" type="number" inputmode="decimal" min="1" max="3000" step="any" placeholder="예: 250"></label>
+            <label class="field">칼로리 (kcal)<input name="kcal" type="number" inputmode="decimal" min="0" max="5000" step="any" placeholder="예: 320"></label>
+            <label class="field">탄수화물 (g)<input name="carb" type="number" inputmode="decimal" min="0" max="1000" step="any" placeholder="0"></label>
+            <label class="field">단백질 (g)<input name="protein" type="number" inputmode="decimal" min="0" max="1000" step="any" placeholder="0"></label>
+            <label class="field">지방 (g)<input name="fat" type="number" inputmode="decimal" min="0" max="1000" step="any" placeholder="0"></label>
+            <div class="field">끼니<div class="meal-pick" data-name="meal"></div></div>
+          </div>
+          <p class="hint" id="manualHint"></p>
+          <label class="check"><input type="checkbox" name="favorite"> ☆ 즐겨찾기에도 저장 (다음에 한 번에 추가)</label>
+          <p class="error" id="manualError" role="alert"></p>
+          <button class="btn primary" type="submit">기록하기</button>
+        </form>
+      </article>
+
+      <article class="card form-card" data-mode-panel="addfood" hidden>
+        <h3>음식 데이터 추가</h3>
+        <p class="muted small">자주 먹는 음식을 목록에 추가하면 검색·섭취량 계산을 그대로 쓸 수 있어요. 영양값은 <b>100g 기준</b>으로 넣어 주세요.</p>
+        <form id="addFoodForm" novalidate>
+          <div class="field-grid">
+            <label class="field span2">음식 이름<input name="name" maxlength="40" placeholder="예: 닭가슴살 스테이크(오리지널)"></label>
+            <label class="field">1회 제공량 (g)<input name="servingG" type="number" inputmode="decimal" min="1" max="3000" step="any" placeholder="예: 100"></label>
+            <label class="field">100g당 칼로리<input name="kcal" type="number" inputmode="decimal" min="0" max="1000" step="any" placeholder="kcal"></label>
+            <label class="field">100g당 탄수화물<input name="carb" type="number" inputmode="decimal" min="0" max="100" step="any" placeholder="g"></label>
+            <label class="field">100g당 단백질<input name="protein" type="number" inputmode="decimal" min="0" max="100" step="any" placeholder="g"></label>
+            <label class="field">100g당 지방<input name="fat" type="number" inputmode="decimal" min="0" max="100" step="any" placeholder="g"></label>
+          </div>
+          <p class="error" id="addFoodError" role="alert"></p>
+          <button class="btn primary" type="submit">목록에 추가</button>
+        </form>
+        <div class="divider"></div>
+        <h4>내가 추가한 음식</h4>
+        <div class="food-list" id="customFoodList"></div>
+      </article>
+    </section>
+
+    <!-- ================= 즐겨찾기 ================= -->
+    <section class="view" id="view-fav" data-view="fav" hidden>
+      <div class="page-head">
+        <h2>즐겨찾기</h2>
+        <p class="muted">음식 옆 ☆를 누르면 여기에 모입니다. ＋를 누르면 <span id="favDateNote">-</span> 기록에 1회 분량이 바로 추가돼요.</p>
+      </div>
+      <div class="fav-grid" id="favGrid"></div>
+    </section>
+
+    <!-- ================= 지난 기록 ================= -->
+    <section class="view" id="view-history" data-view="history" hidden>
+      <div class="page-head">
+        <h2>지난 기록 <span class="muted">최근 30일</span></h2>
+        <p class="muted">막대를 누르면 그날 먹은 음식을 볼 수 있어요. 기록이 없는 날은 평균에서 빼고 계산합니다.</p>
+      </div>
+      <div class="stats" id="historyStats"></div>
+      <article class="card">
+        <div class="card-head">
+          <h3>하루 칼로리</h3>
+          <span class="legend"><i class="sw ok"></i>목표 이하 <i class="sw over"></i>목표 초과 <i class="sw line"></i>목표</span>
+        </div>
+        <div class="chart month" id="monthChart"></div>
+      </article>
+      <article class="card" id="historyDetail"></article>
+    </section>
+
+    <!-- ================= 내 프로필 ================= -->
+    <section class="view" id="view-profile" data-view="profile" hidden>
+      <div class="page-head">
+        <h2>내 프로필</h2>
+        <p class="muted">입력한 신체 정보로 하루 목표 칼로리와 탄단지를 계산합니다.</p>
+      </div>
+      <div class="profile-grid">
+        <article class="card" id="profileCard"></article>
+        <article class="card" id="targetCard"></article>
+        <article class="card">
+          <h3>데이터 백업 / 복원</h3>
+          <p class="muted small">기록은 이 브라우저 안에만 저장돼요. 다른 기기로 옮기거나 지우기 전에 JSON 파일로 백업해 두세요.</p>
+          <div class="btn-row">
+            <button class="btn" data-action="backup">JSON 백업 내려받기</button>
+            <label class="btn">JSON 복원<input type="file" id="restoreInput" accept="application/json,.json" hidden></label>
+          </div>
+          <p class="muted small" id="storageInfo"></p>
+        </article>
+      </div>
+    </section>
+  </main>
+
+  <footer class="foot">
+    NutriLogic 2주차 웹 버전 · 음식 영양값: 식품의약품안전처·농촌진흥청·해양수산부 공공데이터(100g 기준)
+  </footer>
+
+  <!-- 팝업(모달)과 알림(토스트)을 띄울 자리 -->
+  <div class="modal-back" id="modalBack" hidden>
+    <div class="modal" role="dialog" aria-modal="true" id="modal"></div>
+  </div>
+  <div class="toast-area" id="toastArea" aria-live="polite"></div>
+
+  <!-- 순서 중요: 데이터 → 클래스 → 화면 -->
+  <script src="js/foods.js"></script>
+  <script src="js/models.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
